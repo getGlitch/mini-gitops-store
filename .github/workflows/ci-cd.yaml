@@ -11,21 +11,19 @@ permissions:
   packages: write
 
 env:
-  REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/getglitch/mini-gitops-store
 
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - service: frontend
-          - service: product-service
-          - service: order-service
-          - service: inventory-service
+        service:
+          - frontend
+          - product-service
+          - order-service
+          - inventory-service
 
     steps:
       - name: Checkout application repository
@@ -44,11 +42,10 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./${{ matrix.service }}
           file: ./${{ matrix.service }}/Dockerfile
           push: true
-          tags: |
-            ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:${{ github.sha }}
+          tags: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:${{ github.sha }}
 
   update-gitops:
     runs-on: ubuntu-latest
