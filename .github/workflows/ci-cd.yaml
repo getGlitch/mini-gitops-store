@@ -23,13 +23,9 @@ jobs:
       matrix:
         include:
           - service: frontend
-            image: frontend
           - service: product-service
-            image: product-service
           - service: order-service
-            image: order-service
           - service: inventory-service
-            image: inventory-service
 
     steps:
       - name: Checkout application repository
@@ -52,8 +48,7 @@ jobs:
           file: ./${{ matrix.service }}/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ github.sha }}
-            ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:latest
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:${{ github.sha }}
 
   update-gitops:
     runs-on: ubuntu-latest
@@ -73,10 +68,13 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           cd gitops/charts/mini-gitops-store
-          sed -i "s|ghcr.io/getGlitch/mini-gitops-store-frontend:.*|ghcr.io/getglitch/mini-gitops-store-frontend:${IMAGE_TAG}|" values.yaml
-          sed -i "s|ghcr.io/getGlitch/mini-gitops-store-product-service:.*|ghcr.io/getglitch/mini-gitops-store-product-service:${IMAGE_TAG}|" values.yaml
-          sed -i "s|ghcr.io/getGlitch/mini-gitops-store-order-service:.*|ghcr.io/getglitch/mini-gitops-store-order-service:${IMAGE_TAG}|" values.yaml
-          sed -i "s|ghcr.io/getGlitch/mini-gitops-store-inventory-service:.*|ghcr.io/getglitch/mini-gitops-store-inventory-service:${IMAGE_TAG}|" values.yaml
+
+          sed -i "s|^\([[:space:]]*frontend:[[:space:]]*\).*|\1ghcr.io/getglitch/mini-gitops-store-frontend:${IMAGE_TAG}|" values.yaml
+          sed -i "s|^\([[:space:]]*product:[[:space:]]*\).*|\1ghcr.io/getglitch/mini-gitops-store-product-service:${IMAGE_TAG}|" values.yaml
+          sed -i "s|^\([[:space:]]*order:[[:space:]]*\).*|\1ghcr.io/getglitch/mini-gitops-store-order-service:${IMAGE_TAG}|" values.yaml
+          sed -i "s|^\([[:space:]]*inventory:[[:space:]]*\).*|\1ghcr.io/getglitch/mini-gitops-store-inventory-service:${IMAGE_TAG}|" values.yaml
+
+          cat values.yaml
 
       - name: Commit and push GitOps update
         run: |
@@ -84,5 +82,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add charts/mini-gitops-store/values.yaml
-          git commit -m "deploy: update images to ${GITHUB_SHA}" || exit 0
-          git push origin HEAD:main
+
+          if git diff --cached --quiet; then
+            echo "No GitOps changes to commit."
+          else
+            git commit -m "deploy: update images to ${GITHUB_SHA}"
+            git push origin HEAD:main
+          fi
