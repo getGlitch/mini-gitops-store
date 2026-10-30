@@ -70,7 +70,7 @@ jobs:
           sed -i "s|^\([[:space:]]*product:[[:space:]]*\).*|\1ghcr.io/getglitch/mini-gitops-store-product-service:${IMAGE_TAG}|" values.yaml
           sed -i "s|^\([[:space:]]*order:[[:space:]]*\).*|\1ghcr.io/getglitch/mini-gitops-store-order-service:${IMAGE_TAG}|" values.yaml
           sed -i "s|^\([[:space:]]*inventory:[[:space:]]*\).*|\1ghcr.io/getglitch/mini-gitops-store-inventory-service:${IMAGE_TAG}|" values.yaml
-
+          sed -i "s|^releaseTag:.*|releaseTag: \"${IMAGE_TAG}\"|" values.yaml
           cat values.yaml
 
       - name: Commit and push GitOps update
